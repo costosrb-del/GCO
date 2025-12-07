@@ -1,0 +1,54 @@
+LEEME - GESTOR DE INVENTARIOS SIIGO
+====================================
+
+¡Bienvenido! Has recibido el Gestor de Inventarios Siigo.
+
+INSTALACIÓN RÁPIDA:
+===================
+
+1. Copia TODA esta carpeta a tu PC
+   Ejemplo: C:\Inventarios\SIIGO\
+
+2. Doble clic en: GestorInventarioSiigo.exe
+
+3. En el menú, clic en "📦 Inventario"
+
+4. Clic en "🔄 Actualizar desde API"
+   (Espera 2-5 minutos la primera vez)
+
+5. ¡Listo! Ya puedes usar la aplicación
+
+ARCHIVOS IMPORTANTES:
+====================
+
+- GestorInventarioSiigo.exe  → Aplicación principal
+- .env                       → Credenciales (NO compartir)
+- INSTALACION_COMPLETA.md    → Guía detallada
+- README.md                  → Documentación completa
+
+FUNCIONES PRINCIPALES:
+=====================
+
+✅ Actualizar inventario desde Siigo API
+✅ Filtrar por empresa, bodega, producto
+✅ Ordenar columnas (clic en encabezados)
+✅ Exportar a Excel/CSV
+✅ Vista consolidada de todas las empresas
+
+IMPORTANTE - SEGURIDAD:
+======================
+
+⚠️ El archivo .env contiene credenciales de acceso
+⚠️ NO lo compartas públicamente
+⚠️ Guárdalo en lugar seguro
+
+SOPORTE:
+========
+
+¿Problemas? Lee: INSTALACION_COMPLETA.md
+¿Más ayuda? Contacta al administrador
+
+Versión: 1.0.0
+Fecha: 24/11/2025
+
+¡Disfruta del Gestor de Inventarios! 🎉
