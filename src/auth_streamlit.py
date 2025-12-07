@@ -10,16 +10,22 @@ def check_password():
             usr = st.session_state["username"]
             pwd = st.session_state["password"]
             
-            if usr in st.secrets["credentials"]["usernames"]:
-                index = st.secrets["credentials"]["usernames"].index(usr)
-                if pwd == st.secrets["credentials"]["passwords"][index]:
-                    st.session_state["password_correct"] = True
-                    st.session_state["user_name"] = st.secrets["credentials"]["names"][index]
-                    # Clean up
-                    del st.session_state["password"]
-                    del st.session_state["username"]
-                    return
-            
+            # Safe access to secrets
+            try:
+                creds = st.secrets["credentials"]
+                if usr in creds["usernames"]:
+                    index = creds["usernames"].index(usr)
+                    if pwd == creds["passwords"][index]:
+                        st.session_state["password_correct"] = True
+                        st.session_state["user_name"] = creds["names"][index]
+                        # Clean up inputs
+                        del st.session_state["password"]
+                        del st.session_state["username"]
+                        return
+            except Exception as e:
+                # Fallback if secrets structure is wrong
+                st.error(f"Error de configuración: {e}")
+                
             # Failed
             st.session_state["password_correct"] = False
         else:
@@ -104,6 +110,8 @@ def check_password():
             
             if submitted:
                 password_entered()
+                if st.session_state.get("password_correct", False):
+                    st.rerun()
         
         if "password_correct" in st.session_state and not st.session_state["password_correct"]:
             st.error("Usuario o contraseña incorrectos")
