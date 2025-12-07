@@ -95,10 +95,15 @@ def check_password():
         st.markdown('<h2 style="text-align: center; color: #1E3A2F; margin-bottom: 0;">🌿 Origen Botánico</h2>', unsafe_allow_html=True)
         st.markdown('<p style="text-align: center; color: #666; font-size: 14px; margin-top: 5px; margin-bottom: 30px;">Ingresa tus credenciales para continuar</p>', unsafe_allow_html=True)
         
-        st.text_input("Correo electrónico", key="username", placeholder="nombre@empresa.com")
-        st.text_input("Contraseña", type="password", key="password", placeholder="••••••••")
-        
-        st.button("Continuar", on_click=password_entered, type="primary", use_container_width=True)
+        with st.form("login_form"):
+            st.text_input("Correo electrónico", key="username", placeholder="nombre@empresa.com")
+            st.text_input("Contraseña", type="password", key="password", placeholder="••••••••")
+            
+            # Form submit button
+            submitted = st.form_submit_button("Continuar", type="primary", use_container_width=True)
+            
+            if submitted:
+                password_entered()
         
         if "password_correct" in st.session_state and not st.session_state["password_correct"]:
             st.error("Usuario o contraseña incorrectos")
