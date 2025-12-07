@@ -363,6 +363,11 @@ if check_password():
             status_text = st.empty()
             
             total_companies = len(companies)
+            
+            if total_companies == 0:
+                st.error("No se encontraron empresas configuradas. Verifique los Secretos en Streamlit Cloud.")
+                return
+
             completed = 0
             
             # Use max_workers = total_companies to run ALL in parallel
@@ -376,9 +381,11 @@ if check_password():
                         if result:
                             all_data.extend(company_data)
                         else:
-                            errors.append(f"Error en {company['name']}")
+                            # If result is False, it means something failed inside process_company_data but didn't raise
+                            errors.append(f"Fallo al obtener datos de {company['name']}")
                     except Exception as e:
-                        errors.append(f"Excepción en {company['name']}: {str(e)}")
+                        # This catches crashes in the thread itself
+                        errors.append(f"Error crítico en {company['name']}: {str(e)}")
                     
                     completed += 1
                     progress_bar.progress(completed / total_companies, text=f"Procesando... ({completed}/{total_companies})")
