@@ -908,7 +908,9 @@ if check_password():
             st.write("### Empresas Cargadas Exitosamente:")
             loaded_comps = get_config()
             for c in loaded_comps:
-                st.success(f"ID: {c['id']} - {c['name']} (Usuario: {c['username']})")
+                # Show key hint (safely)
+                key_hint = c['access_key'][:10] + "..." if c['access_key'] else "N/A"
+                st.success(f"ID: {c['id']} - {c['name']} (Usuario: {c['username']}) | Key: {key_hint}")
             
             st.write("### Claves Detectadas en Secretos/Variables:")
             found_keys = []
