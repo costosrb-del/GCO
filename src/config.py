@@ -55,8 +55,8 @@ def get_config():
         if name and username and access_key:
             companies.append({
                 "id": i,
-                "name": name,
-                "username": username,
-                "access_key": access_key
+                "name": name.strip(),
+                "username": username.strip(),
+                "access_key": access_key.strip()
             })
     return companies
