@@ -902,3 +902,34 @@ if check_password():
             )
         else:
             st.info("Sin datos que mostrar. Realiza una connsulta o ajusta los filtros.")
+
+        # --- DIAGNÓSTICO (Visible para depurar) ---
+        with st.expander("🛠️ Diagnóstico de Configuración (Si falta alguna empresa, revisa aquí)"):
+            st.write("### Empresas Cargadas Exitosamente:")
+            loaded_comps = get_config()
+            for c in loaded_comps:
+                st.success(f"ID: {c['id']} - {c['name']} (Usuario: {c['username']})")
+            
+            st.write("### Claves Detectadas en Secretos/Variables:")
+            found_keys = []
+            
+            # Check Streamlit Secrets
+            if hasattr(st, "secrets"):
+                # Root keys
+                for k in st.secrets:
+                    if "COMPANY" in k: found_keys.append(f"Secrets (Root): {k}")
+                # Credentials nested keys
+                if "credentials" in st.secrets:
+                    for k in st.secrets["credentials"]:
+                        if "COMPANY" in k: found_keys.append(f"Secrets (Credentials): {k}")
+            
+            # Check OS Environment
+            for k in os.environ:
+                 if "COMPANY" in k: found_keys.append(f"ENV: {k}")
+            
+            if found_keys:
+                st.code("\n".join(sorted(found_keys)))
+            else:
+                st.warning("No se detectaron claves tipo 'COMPANY_...' en ninguna parte.")
+            
+            st.info("Nota: Para que una empresa cargue, debe tener obligatoriamente sus 3 claves: _NAME, _USER y _KEY con el mismo número ID.")
