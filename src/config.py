@@ -17,13 +17,31 @@ def load_env_file():
 load_env_file()
 
 def get_config():
+    # Import streamlit inside function to avoid circular imports or fast-loading issues
+    import streamlit as st
+    
     companies = []
-    for i in range(1, 7):  # Changed from 5 to 7 to support up to 6 companies
-
-        name = os.getenv(f"COMPANY_{i}_NAME")
-        username = os.getenv(f"COMPANY_{i}_USER")
-        access_key = os.getenv(f"COMPANY_{i}_KEY")
+    for i in range(1, 7):  # Support up to 6 companies
         
+        # Keys to look for
+        key_name = f"COMPANY_{i}_NAME"
+        key_user = f"COMPANY_{i}_USER"
+        key_access = f"COMPANY_{i}_KEY"
+        
+        # 1. Try OS Environment (Local .env)
+        name = os.getenv(key_name)
+        username = os.getenv(key_user)
+        access_key = os.getenv(key_access)
+        
+        # 2. Fallback to Streamlit Secrets (Cloud)
+        # Check if keys exist in the root of st.secrets
+        if name is None and key_name in st.secrets:
+            name = st.secrets[key_name]
+        if username is None and key_user in st.secrets:
+            username = st.secrets[key_user]
+        if access_key is None and key_access in st.secrets:
+            access_key = st.secrets[key_access]
+            
         if name and username and access_key:
             companies.append({
                 "id": i,
