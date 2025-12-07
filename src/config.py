@@ -32,13 +32,25 @@ def get_config():
         access_key = os.getenv(key_access)
         
         # 2. Fallback to Streamlit Secrets (Cloud)
-        # Check if keys exist in the root of st.secrets
-        if name is None and key_name in st.secrets:
-            name = st.secrets[key_name]
-        if username is None and key_user in st.secrets:
-            username = st.secrets[key_user]
-        if access_key is None and key_access in st.secrets:
-            access_key = st.secrets[key_access]
+        # Check root
+        if name is None:
+            if key_name in st.secrets:
+                name = st.secrets[key_name]
+            # Check for common mistake: nested under [credentials]
+            elif "credentials" in st.secrets and key_name in st.secrets["credentials"]:
+                name = st.secrets["credentials"][key_name]
+                
+        if username is None:
+            if key_user in st.secrets:
+                username = st.secrets[key_user]
+            elif "credentials" in st.secrets and key_user in st.secrets["credentials"]:
+                username = st.secrets["credentials"][key_user]
+                
+        if access_key is None:
+            if key_access in st.secrets:
+                access_key = st.secrets[key_access]
+            elif "credentials" in st.secrets and key_access in st.secrets["credentials"]:
+                access_key = st.secrets["credentials"][key_access]
             
         if name and username and access_key:
             companies.append({
