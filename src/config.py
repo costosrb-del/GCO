@@ -19,7 +19,7 @@ load_env_file()
 
 def get_config():
     companies = []
-    for i in range(1, 7):  # Support up to 6 companies
+    for i in range(1, 21):  # Support up to 20 companies
         
         # Keys to look for
         key_name = f"COMPANY_{i}_NAME"
