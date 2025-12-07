@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import streamlit as st
 
 import sys
 
@@ -17,9 +18,6 @@ def load_env_file():
 load_env_file()
 
 def get_config():
-    # Import streamlit inside function to avoid circular imports or fast-loading issues
-    import streamlit as st
-    
     companies = []
     for i in range(1, 7):  # Support up to 6 companies
         
