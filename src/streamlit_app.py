@@ -32,7 +32,7 @@ st.markdown("""
     .block-container {
         padding-top: 2rem !important; /* Reduced */
         padding-bottom: 3rem !important;
-        max-width: 95% !important;
+        max-width: 99% !important;
         gap: 1rem; /* Compact gap */
     }
     
@@ -766,172 +766,154 @@ if check_password():
         df_movs = st.session_state.mov_data
             
         # --- ADVANCED FILTERS (ALWAYS VISIBLE) ---
-        st.markdown("### Filtrar Resultados")
-        af_1, af_2, af_3, af_4, af_5, af_6 = st.columns(6)
-        
-        # Safe filter lists
-        warehouses_list = sorted(df_movs["warehouse"].astype(str).unique().tolist()) if not df_movs.empty else []
-        doctypes_list = sorted(df_movs["doc_type"].astype(str).unique().tolist()) if not df_movs.empty else []
-        movtypes_list = sorted(df_movs["type"].astype(str).unique().tolist()) if not df_movs.empty else []
-        comps_list = sorted(df_movs["company"].astype(str).unique().tolist()) if not df_movs.empty else []
+        # --- FILTERS (Ensuring every column has a filter) ---
+        st.markdown("### 🔎 Filtrar Resultados")
+        with st.container():
+            # Row 1: Categorical Filters
+            c1, c2, c3, c4 = st.columns(4)
+            with c1:
+                # Get unique lists safely
+                opts_comp = sorted(df_movs["company"].astype(str).unique()) if not df_movs.empty else []
+                sel_comp = st.multiselect("Empresa", opts_comp, placeholder="Todas")
+            with c2:
+                opts_wh = sorted(df_movs["warehouse"].astype(str).unique()) if not df_movs.empty else []
+                sel_wh = st.multiselect("Bodega", opts_wh, placeholder="Todas")
+            with c3:
+                opts_dtype = sorted(df_movs["doc_type"].astype(str).unique()) if not df_movs.empty else []
+                sel_dtype = st.multiselect("Tipo Documento", opts_dtype, placeholder="Todos")
+            with c4:
+                opts_mov = sorted(df_movs["type"].astype(str).unique()) if not df_movs.empty else []
+                sel_mtype = st.multiselect("Tipo Movimiento", opts_mov, placeholder="Todos")
+            
+            # Row 2: Text Search Filters (For specific columns)
+            c5, c6, c7, c8 = st.columns(4)
+            with c5:
+                search_text = st.text_input("Buscar SKU/Producto", placeholder="Nombre o código...")
+            with c6:
+                search_client = st.text_input("Buscar Tercero/NIT", placeholder="Cliente...")
+            with c7:
+                search_doc = st.text_input("Buscar # Documento", placeholder="Número...")
+            with c8:
+                search_obs = st.text_input("Buscar Observación / Pedido", placeholder="Nota...")
 
-        with af_1:
-            sel_wh = st.multiselect("Bodegas", warehouses_list, placeholder="Todas")
-        with af_2:
-            sel_comp = st.multiselect("Empresas", comps_list, placeholder="Todas")
-        with af_3:
-            sel_dtype = st.multiselect("Tipos de Doc.", doctypes_list, placeholder="Todos")
-        with af_4:
-            sel_mtype = st.multiselect("Tipo Movimiento", movtypes_list, placeholder="Todos")
-        with af_5:
-            search_doc = st.text_input("Buscar # Documento", placeholder="Ej: FV-123...")
-        with af_6:
-            search_text = st.text_input("Buscar Producto/SKU", placeholder="Nombre o Código...")
-
-        # --- APPLY LOCAL FILTERS ---
+        # --- APPLY FILTERS ---
         filtered_movs = df_movs.copy()
         
         if not filtered_movs.empty:
-            if sel_wh: filtered_movs = filtered_movs[filtered_movs["warehouse"].isin(sel_wh)]
+            # Categorical
             if sel_comp: filtered_movs = filtered_movs[filtered_movs["company"].isin(sel_comp)]
+            if sel_wh: filtered_movs = filtered_movs[filtered_movs["warehouse"].isin(sel_wh)]
             if sel_dtype: filtered_movs = filtered_movs[filtered_movs["doc_type"].isin(sel_dtype)]
             if sel_mtype: filtered_movs = filtered_movs[filtered_movs["type"].isin(sel_mtype)]
             
-            if search_doc:
+            # Text Searches
+            if search_text:
+                term = search_text.lower()
                 filtered_movs = filtered_movs[
-                    filtered_movs["doc_number"].astype(str).str.contains(search_doc, case=False)
+                    filtered_movs["name"].astype(str).str.lower().str.contains(term, na=False) |
+                    filtered_movs["code"].astype(str).str.lower().str.contains(term, na=False)
                 ]
             
-            if search_text:
-                filtered_movs = filtered_movs[
-                    filtered_movs["name"].astype(str).str.contains(search_text, case=False) |
-                    filtered_movs["code"].astype(str).str.contains(search_text, case=False)
-                ]
+            if search_doc:
+                filtered_movs = filtered_movs[filtered_movs["doc_number"].astype(str).str.lower().str.contains(search_doc.lower(), na=False)]
+                
+            if search_client:
+                # Check if columns exist first
+                term = search_client.lower()
+                client_col = filtered_movs["client"].astype(str).str.lower() if "client" in filtered_movs else pd.Series([""]*len(filtered_movs))
+                nit_col = filtered_movs["nit"].astype(str).str.lower() if "nit" in filtered_movs else pd.Series([""]*len(filtered_movs))
+                
+                filtered_movs = filtered_movs[client_col.str.contains(term, na=False) | nit_col.str.contains(term, na=False)]
+                
+            if search_obs:
+                term = search_obs.lower()
+                obs_col = filtered_movs["observations"].astype(str).str.lower() if "observations" in filtered_movs else pd.Series([""]*len(filtered_movs))
+                filtered_movs = filtered_movs[obs_col.str.contains(term, na=False)]
 
         # --- METRICS ---
         if not filtered_movs.empty:
             m1, m2, m3, m4, m5 = st.columns(5)
+            # Calculate metrics on FILTERED data
             total_in = filtered_movs[filtered_movs["type"] == "ENTRADA"]["quantity"].sum()
             total_out = filtered_movs[filtered_movs["type"] == "SALIDA"]["quantity"].sum()
-            total_adj = filtered_movs[filtered_movs["type"] == "AJUSTE"]["quantity"].sum()
+            total_adj = filtered_movs[filtered_movs["type"] == "AJUSTE"]["quantity"].sum() # Note: AJUSTE might need split if positive/negative
             
             with m1: st.metric("Total Registros", len(filtered_movs))
             with m2: st.metric("Entradas", f"{total_in:,.0f}")
             with m3: st.metric("Salidas", f"{total_out:,.0f}")
-            with m4: st.metric("Ajustes", f"{total_adj:,.0f}")
+            with m4:
+                # Simplification for adjustments
+                st.metric("Total (Neto)", f"{filtered_movs['quantity'].sum():,.0f}")
             with m5: st.metric("SKUs Unicos", filtered_movs["code"].nunique())
         else:
-             m1, m2, m3, m4, m5 = st.columns(5)
-             with m1: st.metric("Total Registros", 0)
-             with m2: st.metric("Entradas", "0")
-             with m3: st.metric("Salidas", "0")
-             with m4: st.metric("Ajustes", "0")
-             with m5: st.metric("SKUs Unicos", 0)
+             st.info("Sin datos para los filtros seleccionados.")
 
         # --- TABLE & EXPORT ---
         st.markdown("---")
-        col_exp1, col_exp2 = st.columns([1, 1])
         
         # Prepare Export Data
         if not filtered_movs.empty:
-            export_data = filtered_movs[["date", "company", "doc_type", "doc_number", "code", "name", "warehouse", "type", "quantity"]].copy()
-            export_data.columns = ["Fecha", "Empresa", "Tipo Doc", "# Documento", "SKU", "Producto", "Bodega", "Movimiento", "Cantidad"]
+            # Ensure new columns exist 
+            for col in ["client", "nit", "observations"]:
+                if col not in filtered_movs.columns:
+                    filtered_movs[col] = "N/A"
+
+            export_data = filtered_movs[["date", "company", "doc_type", "doc_number", "client", "nit", "code", "name", "warehouse", "type", "quantity", "observations"]].copy()
+            export_data.columns = ["Fecha", "Empresa", "Tipo Doc", "# Documento", "Tercero", "NIT", "SKU", "Producto", "Bodega", "Movimiento", "Cantidad", "Observaciones"]
         else:
-             export_data = pd.DataFrame() # Empty for export
+             export_data = pd.DataFrame() 
+
+        col_exp1, col_exp2 = st.columns([1, 1])
 
         with col_exp1:
             st.download_button(
-                "Descargar Excel (Filtrado)",
-                to_excel(export_data),
-                "movimientos_filtrados.xlsx",
+                "📥 Descargar Excel (Filtrado)",
+                to_excel(export_data) if not export_data.empty else b"",
+                f"movimientos_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True,
                 disabled=filtered_movs.empty
             )
         with col_exp2:
-            current_filters_text = {
-                "Bodegas": str(sel_wh) if sel_wh else "Todas",
-                "Docs": str(sel_dtype) if sel_dtype else "Todos"
-            }
-            
-            # Custom Header for PDF
+             # Header logic for PDF
             if not filtered_movs.empty:
-                # Calculate Summary for Header
                 count_fv = len(filtered_movs[filtered_movs["doc_type"] == "FV"])
-                # count_sku = filtered_movs["code"].nunique() # Already calculated in metrics
                 count_sku = filtered_movs["code"].nunique()
                 total_qty = filtered_movs["quantity"].sum()
-                
                 start_str = start_date.strftime('%Y-%m-%d')
                 end_str = end_date.strftime('%Y-%m-%d')
-                
-                header_text = f"ORIGEN BOTANICO REPORTE DE MOVIMIENTOS DE {start_str} A {end_str}\n({count_fv} FV, {count_sku} SKU, {total_qty:,.0f} UNIDADES)"
+                header_text = f"ORIGEN BOTANICO REPORTE DE MOVIMIENTOS\nDEL {start_str} AL {end_str}\n({count_fv} docs, {count_sku} skus, {total_qty:,.0f} unds)"
             else:
-                header_text = "Reporte Vacío"
-
-            # Only enable PDF if NOT empty, otherwise helper fails
+                header_text = ""
+                
             st.download_button(
-                "Descargar PDF (Filtrado)",
-                to_pdf(filtered_movs[["date", "doc_type", "doc_number", "name", "quantity"]], "Detalle Movimientos", filters=current_filters_text, custom_header=header_text) if not filtered_movs.empty else b"",
+                "📄 Descargar PDF (Filtrado)",
+                to_pdf(filtered_movs[["date", "doc_type", "doc_number", "name", "quantity"]], "Detalle Movimientos", custom_header=header_text) if not filtered_movs.empty else b"",
                 "movimientos_filtrados.pdf",
                 "application/pdf",
                 use_container_width=True,
                 disabled=filtered_movs.empty
             )
         
-        # Spacing
         st.markdown("<br>", unsafe_allow_html=True)
 
         if not filtered_movs.empty:
             st.dataframe(
-                filtered_movs[["date", "company", "doc_type", "doc_number", "code", "name", "warehouse", "type", "quantity"]],
+                filtered_movs[["date", "company", "doc_type", "doc_number", "client", "code", "name", "warehouse", "type", "quantity", "observations"]],
                 column_config={
                     "date": st.column_config.TextColumn("Fecha", width="small"),
                     "company": st.column_config.TextColumn("Empresa", width="medium"),
-                    "doc_type": st.column_config.TextColumn("Tipo Doc", width="medium"),
+                    "doc_type": st.column_config.TextColumn("Tipo Doc", width="small"),
                     "doc_number": st.column_config.TextColumn("# Doc", width="small"),
+                    "client": st.column_config.TextColumn("Tercero / NIT", width="medium"),
                     "code": st.column_config.TextColumn("SKU", width="small"),
                     "name": st.column_config.TextColumn("Producto", width="large"),
                     "warehouse": st.column_config.TextColumn("Bodega", width="medium"),
                     "type": st.column_config.TextColumn("Tipo", width="small"),
-                    "quantity": st.column_config.NumberColumn("Cantidad", format="%.2f", width="small")
+                    "quantity": st.column_config.NumberColumn("Cantidad", format="%.2f", width="small"),
+                    "observations": st.column_config.TextColumn("Obs", width="small")
                 },
                 use_container_width=True,
                 hide_index=True,
                 height=600
             )
-        else:
-            st.info("Sin datos que mostrar. Realiza una connsulta o ajusta los filtros.")
-
-        # --- DIAGNÓSTICO (Visible para depurar) ---
-        with st.expander("🛠️ Diagnóstico de Configuración (Si falta alguna empresa, revisa aquí)"):
-            st.write("### Empresas Cargadas Exitosamente:")
-            loaded_comps = get_config()
-            for c in loaded_comps:
-                # Show key hint (safely)
-                key_hint = c['access_key'][:10] + "..." if c['access_key'] else "N/A"
-                st.success(f"ID: {c['id']} - {c['name']} (Usuario: {c['username']}) | Key: {key_hint}")
-            
-            st.write("### Claves Detectadas en Secretos/Variables:")
-            found_keys = []
-            
-            # Check Streamlit Secrets
-            if hasattr(st, "secrets"):
-                # Root keys
-                for k in st.secrets:
-                    if "COMPANY" in k: found_keys.append(f"Secrets (Root): {k}")
-                # Credentials nested keys
-                if "credentials" in st.secrets:
-                    for k in st.secrets["credentials"]:
-                        if "COMPANY" in k: found_keys.append(f"Secrets (Credentials): {k}")
-            
-            # Check OS Environment
-            for k in os.environ:
-                 if "COMPANY" in k: found_keys.append(f"ENV: {k}")
-            
-            if found_keys:
-                st.code("\n".join(sorted(found_keys)))
-            else:
-                st.warning("No se detectaron claves tipo 'COMPANY_...' en ninguna parte.")
-            
-            st.info("Nota: Para que una empresa cargue, debe tener obligatoriamente sus 3 claves: _NAME, _USER y _KEY con el mismo número ID.")

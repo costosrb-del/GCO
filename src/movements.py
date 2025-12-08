@@ -121,6 +121,29 @@ def extract_movements_from_doc(doc, doc_type):
     elif doc_type == "journals":
         mov_type = "AJUSTE" # Movimiento manual / Contable
     
+    # Extract Third Party info (Customer/Vendor)
+    # Extract Third Party info (Customer/Vendor)
+    # Siigo API varies 'customer', 'provider', 'company', or sometimes 'contact'
+    third_party = doc.get("customer") or doc.get("provider") or doc.get("company") or doc.get("contact") or {}
+    
+    # Sometimes it's a list (rare but possible), take first
+    if isinstance(third_party, list) and len(third_party) > 0:
+        third_party = third_party[0]
+    
+    # Ensure it's a dictionary
+    if not isinstance(third_party, dict):
+        third_party = {}
+
+    client_name = third_party.get("name") or third_party.get("full_name") or third_party.get("business_name")
+    client_nit = third_party.get("identification", "N/A")
+    
+    # Fallback: If name is missing (common in light API responses), show NIT as Name
+    if not client_name:
+        client_name = client_nit
+    
+    # Extract Observation
+    observation = doc.get("observations", "")
+    
     items = doc.get("items", [])
     print(f"DEBUG: Processing document {doc_number} with {len(items)} items")
     
@@ -156,13 +179,16 @@ def extract_movements_from_doc(doc, doc_type):
             "date": doc_date,
             "doc_type": friendly_type,
             "doc_number": doc_number,
+            "client": client_name,
+            "nit": client_nit,
             "code": code,
             "name": description,
             "warehouse": warehouse_name,
             "quantity": qty,
             "price": price,
             "total": qty * price,
-            "type": mov_type
+            "type": mov_type,
+            "observations": observation
         })
         
     print(f"DEBUG: Extracted {len(movements)} movements from document {doc_number}")
