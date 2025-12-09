@@ -44,11 +44,30 @@ class PDF(FPDF):
         self.set_fill_color(24, 60, 48) # #183C30
         self.rect(0, 0, 210, 30, 'F') # Full width banner (A4 width approx 210)
         
+        # Logo
+        import os
+        logo_path = "src/assets/logo.png"
+        has_logo = False
+        if os.path.exists(logo_path):
+            try:
+                # x=10, y=5, h=20 (banner is 30)
+                self.image(logo_path, 10, 5, h=20)
+                has_logo = True
+            except:
+                pass # Fail silently if image is bad
+
         # Title Text
         self.set_font('Arial', 'B', 14) # Slightly smaller to fit multiple lines
         self.set_text_color(255, 255, 255) # White
-        self.set_xy(10, 5)
-        self.multi_cell(190, 8, self.header_title, 0, 'C')
+        
+        if has_logo:
+             self.set_xy(35, 5)
+             w_title = 165
+        else:
+             self.set_xy(10, 5)
+             w_title = 190
+             
+        self.multi_cell(w_title, 8, self.header_title, 0, 'C')
         self.ln(2)
         
         # Reset colors

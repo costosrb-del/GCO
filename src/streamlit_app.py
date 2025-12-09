@@ -8,7 +8,7 @@ from utils import to_excel, to_pdf
 # Page Config
 st.set_page_config(
     page_title="Gestor de Inventarios - Origen Botánico",
-    page_icon="🌿",
+    page_icon="src/assets/logo.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -283,51 +283,219 @@ if check_password():
 
     # SIIGO-Style Sidebar
     with st.sidebar:
-        # Logo/Header
+        # Standardize Sidebar Background & Logo Integration via CSS
         st.markdown("""
-        <div style='display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-left: 10px;'>
-             <div style='background: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px;'>🌿</div>
-             <h2 style='color: white; margin: 0; font-size: 1.25rem; font-weight: 700;'>Siigo Nube</h2>
-        </div>
+        <style>
+            [data-testid="stSidebar"] {
+                background-color: #183C30 !important;
+                padding-top: 0 !important; 
+            }
+            /* Fix top patch */
+            [data-testid="stSidebar"] > div:first-child {
+                background-color: #183C30 !important;
+                padding-top: 2rem !important; /* Minimal spacing for logo */
+            }
+            [data-testid="stSidebar"] [data-testid="stImage"] {
+                background-color: #183C30 !important; 
+                display: flex;
+                justify-content: center;
+                margin-bottom: 30px; /* Space between logo and menu */
+            }
+            [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
+                color: #FFFFFF !important;
+            }
+            [data-testid="stSidebar"] label {
+                color: #E0E0E0 !important;
+            }
+            hr {
+                display: none !important; /* Hide separator */
+            }
+            
+            /* Sidebar Buttons Style - VISIBLE & ANIMATED */
+            .stSidebar button {
+                background-color: #FFFFFF !important; /* Solid White */
+                border: 1px solid #E0E0E0 !important;
+                color: #183C30 !important; /* Dark Green Text */
+                border-radius: 8px !important;
+                margin-top: 5px !important;
+                text-align: center !important; /* Centered text */
+                font-weight: 600 !important;
+                transition: all 0.3s ease !important;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+            }
+            .stSidebar button:hover {
+                background-color: #F0F0F0 !important; /* Slight grey on hover */
+                border-color: #FFFFFF !important;
+                transform: translateY(-2px) !important; 
+                box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
+            }
+            .stSidebar button:active {
+                transform: translateY(0) !important;
+            }
+            
+            /* Expander Header Text & Icon VISIBILITY */
+            [data-testid="stSidebar"] [data-testid="stExpander"] details summary p,
+            [data-testid="stSidebar"] [data-testid="stExpander"] details summary span,
+            [data-testid="stSidebar"] [data-testid="stExpander"] details summary svg {
+                 color: #183C30 !important; /* Dark Green Contrast */
+                 fill: #183C30 !important;
+                 font-weight: 700 !important;
+                 font-size: 1.1rem !important;
+            }
+            
+            /* Expander Body & Container */
+            [data-testid="stSidebar"] [data-testid="stExpander"] details {
+                 background-color: white !important; 
+                 border-radius: 8px !important;
+                 border: none !important;
+                 margin-bottom: 15px !important;
+                 overflow: hidden !important; /* Contains children */
+            }
+            
+            /* Sidebar Collapse Button (Hamburger/X) */
+            [data-testid="stSidebarCollapseButton"] > svg, 
+            [data-testid="stSidebarNavItems"] > svg {
+                color: white !important;
+                fill: white !important;
+            }
+            [data-testid="stSidebarCollapseButton"] {
+                color: white !important;
+            }
+
+            /* Inner Content of Expander (The list of buttons) */
+            [data-testid="stSidebar"] [data-testid="stExpander"] details > div {
+                 background-color: white !important;
+                 padding: 10px !important; /* Some padding for the card container */
+            }
+            /* KILL THE GREY BOX - Nuclear Option */
+            [data-testid="stSidebar"] [data-testid="stExpander"] details div {
+                 background-color: transparent !important;
+            }
+            /* Re-apply white only to the expander container/details */
+            [data-testid="stSidebar"] [data-testid="stExpander"] details {
+                 background-color: white !important;
+            }
+
+            [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stVerticalBlock"] {
+                 gap: 0px !important;
+            }
+            
+            /* FORCE FULL WIDTH on Button Wrappers to fix "Saldos" being smaller */
+            /* SWITCH TO BLOCK DISPLAY instead of Flex Center to force stretch */
+            [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stVerticalBlock"] > div {
+                 width: 100% !important;
+                 min-width: 100% !important;
+                 display: block !important; 
+                 background-color: transparent !important; 
+                 margin-bottom: -15px !important; /* Pull them significantly closer (Negative margin to fight Streamlit gaps) */
+            }
+            
+            /* Last child margin correction */
+             [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stVerticalBlock"] > div:last-child {
+                 margin-bottom: 0px !important;
+             }
+
+            /* Remove wrapper styling */
+            [data-testid="stSidebar"] [data-testid="stExpander"] div[data-testid="element-container"], 
+            [data-testid="stSidebar"] [data-testid="stExpander"] div[data-testid="stButton"] {
+                 background-color: transparent !important;
+                 margin: 0 !important;
+                 padding: 0 !important;
+                 border: none !important;
+                 box-shadow: none !important;
+                 width: 100% !important; 
+            }
+
+            /* Unify Button Styling for Sidebar items in Expander */
+            [data-testid="stSidebar"] [data-testid="stExpander"] button {
+                background-color: white !important; /* Button itself remains white */
+                border: 1px solid #E0E0E0 !important; 
+                color: #183C30 !important;
+                width: 100% !important; /* Force width */
+                border-radius: 6px !important;
+                margin: 0 !important; /* No extra margin on button */
+                height: 45px !important; 
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+                outline: none !important; 
+            }
+            [data-testid="stSidebar"] [data-testid="stExpander"] button:hover {
+                background-color: #F3F4F6 !important;
+                border-color: #183C30 !important;
+                transform: none !important; 
+            }
+            
+            /* Logout Button RED (Fixed Position) */
+            .sidebar-logout {
+                position: fixed !important;
+                bottom: 20px !important;
+                left: 20px !important;
+                width: 250px !important; /* Fixed width assumption for sidebar */
+                z-index: 100 !important;
+            }
+            .sidebar-logout button {
+                border: none !important;
+                background-color: #D32F2F !important; /* Strong Red */
+                color: white !important;
+                font-weight: 600 !important;
+                margin-top: 0 !important;
+                width: 100% !important;
+            }
+            .sidebar-logout button:hover {
+                 background-color: #B71C1C !important; 
+                 box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
+            }
+            
+            /* User Info Fixed Above Logout */
+            .sidebar-user-info {
+                position: fixed !important;
+                bottom: 75px !important; /* Above button */
+                left: 20px !important;
+                width: 250px !important;
+                z-index: 100 !important;
+                pointer-events: none; 
+            }
+
+            /* Hide Sidebar Scrollbar */
+            section[data-testid="stSidebar"] ::-webkit-scrollbar {
+                display: none;
+            }
+        </style>
         """, unsafe_allow_html=True)
         
-        # Navigation Menu (Simulating List)
-        nav_options = {
-            " Inventarios": "📦",   
-            " Movimientos": "📋"    
-        }
+        # Logo Centered (Top)
+        st.image("src/assets/logo.png", width=160)
         
-        # Reverse map for logic
-        display_options = [f"{icon} {label}" for label, icon in nav_options.items()]
+        # Initialize Navigation State
+        if "current_menu" not in st.session_state:
+            st.session_state.current_menu = "Inventarios"
+            
+        # Menu Section (Immediately after logo)
+        with st.expander("📦 Inventarios", expanded=True):
+            if st.button("Saldos", use_container_width=True):
+                st.session_state.current_menu = "Inventarios"
+                st.rerun()
+                
+            if st.button("Movimientos", use_container_width=True):
+                st.session_state.current_menu = "Movimientos"
+                st.rerun()
+
+        # NO SPACER - Fixed positioning handles layout
         
-        selected_display = st.radio(
-            "Menú",
-            display_options,
-            label_visibility="collapsed"
-        )
-        
-        # Map back to simple key
-        menu_option = "Inventarios" if "Inventarios" in selected_display else "Movimientos"
-        
-        # User Profile & Logout (Moved up, closer to menu)
-        st.markdown("<br>", unsafe_allow_html=True) # Small spacer
-        st.markdown("---")
-        
-        # Profile Section
+        # Compact Lower Section (Fixed Position)
         st.markdown(f"""
-        <div style='padding: 0 10px; color: white;'>
-            <div style='font-size: 0.8rem; opacity: 0.8;'>Usuario Conectado</div>
-            <div style='font-weight: 600;'>{st.session_state.get('user_name', 'Admin')}</div>
+        <div class="sidebar-user-info" style='padding: 0 5px; color: rgba(255,255,255,0.7); font-size: 0.8rem; text-align: left; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;'>
+            <div>Usuario: <strong style='color: white;'>{st.session_state.get('user_name', 'Admin')}</strong></div>
         </div>
         """, unsafe_allow_html=True)
         
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        # Logout as a discrete item
+        # Logout Button (Fixed Position)
         st.markdown('<div class="sidebar-logout">', unsafe_allow_html=True)
-        if st.button("🚪 Cerrar Sesión", use_container_width=True):
+        if st.button("Cerrar Sesión", use_container_width=True):
              logout()
         st.markdown('</div>', unsafe_allow_html=True)
+
+    # Use state for logic
+    menu_option = st.session_state.current_menu
 
     # Main Content
     if menu_option == "Inventarios":

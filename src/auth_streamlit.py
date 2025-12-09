@@ -36,89 +36,219 @@ def check_password():
         return True
 
     # Show Login Form if not authenticated
+    # Split Screen Login Design
     st.markdown("""
     <style>
-        /* Login Page Specific Styles */
+        /* Force Full Screen & Remove Padding */
+        .stApp {
+            background-color: white !important;
+            overflow: hidden !important; /* NO SCROLL ALLOWED */
+        }
         [data-testid="stAppViewContainer"] {
-            background-color: #F0F2F5;
+            background-color: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+            height: 100vh !important;
+        }
+        [data-testid="stHeader"] {
+            display: none !important; /* Hide header strip */
         }
         [data-testid="stSidebar"] {
-            display: none;
+            display: none !important; 
         }
-        .login-container {
-            background-color: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            max-width: 400px;
-            margin: auto;
+        .block-container {
+            padding: 0 !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            overflow: hidden !important;
         }
-        .login-header {
+        /* Remove Streamlit's vertical gap */
+        [data-testid="stVerticalBlock"] {
+            gap: 0 !important;
+            padding: 0 !important;
+        }
+        
+        /* Left Panel Style */
+        .left-panel {
+            background-color: #183C30;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        /* Right Panel Style */
+        .right-panel {
+            height: 100vh !important;
+            display: flex !important;
+            align-items: center !important; /* Horiz Center */
+            justify-content: center !important; /* Vert Center */
+            flex-direction: column !important;
+            padding: 20px;
+            margin-top: -50px; /* Counteract streamlit top padding */
+        }
+        
+        /* Form Styling */
+        .login-title {
             font-family: 'Inter', sans-serif;
             color: #1E3A2F;
-            font-weight: 700;
-            font-size: 24px;
-            margin-bottom: 8px;
+            font-weight: 800;
+            font-size: 2rem;
+            margin-bottom: 10px;
         }
-        .login-sub {
-            font-family: 'Inter', sans-serif;
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
-        .stTextInput input {
-            background-color: #F9FAFB;
-            border: 1px solid #E5E7EB;
-            color: #000000;
-        }
-        .stButton button {
-            background-color: #1E3A2F !important;
-            color: white !important;
-            font-weight: 600;
-            border-radius: 8px;
-            height: 45px;
-        }
-        .forgot-password {
-            text-align: center;
-            margin-top: 16px;
-            font-size: 13px;
-        }
-        .forgot-password a {
-            color: #1E3A2F;
-            text-decoration: none;
-            font-weight: 500;
+        .login-subtitle {
+             color: #666;
+             margin-bottom: 30px;
         }
     </style>
     """, unsafe_allow_html=True)
 
-    # Centered Login Form
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # --- ABSOLUTE POSITIONING STRATEGY ---
+    import base64
+    def get_base64_image(image_path):
+        try:
+            with open(image_path, "rb") as img_file:
+                return base64.b64encode(img_file.read()).decode()
+        except:
+             return ""
+
+    logo_b64 = get_base64_image("src/assets/logo.png")
+
+    # Full Screen Layout CSS
+    st.markdown(f"""
+    <style>
+        /* RESET STREAMLIT CONTAINERS */
+        .stApp {{
+            background-color: white !important;
+        }}
+        [data-testid="stAppViewContainer"] {{
+            background-color: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+        }}
+        [data-testid="stHeader"], [data-testid="stSidebar"], [data-testid="stToolbar"] {{
+            display: none !important;
+        }}
+        .block-container {{
+            padding: 0 !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+        }}
+        [data-testid="stVerticalBlock"] {{
+            gap: 0 !important;
+            padding: 0 !important;
+        }}
+        /* LEFT PANEL (Green Overlay) */
+        .split-left {{
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 50% !important;
+            max-width: 50% !important; /* Strict limit */
+            height: 100vh !important;
+            background-color: #183C30 !important;
+            z-index: 10 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }}
+        
+        /* FORM CONTAINER - TARGETING STREAMLIT NATIVE FORM DIRECTLY */
+        [data-testid="stForm"] {{
+            position: fixed !important;
+            top: 50% !important; /* True Center */
+            left: 75% !important; 
+            transform: translate(-50%, -50%) !important;
+            width: 100% !important; 
+            max-width: 360px !important; /* 20% larger */
+            height: auto !important; /* Define height by content */
+            min-height: unset !important;
+            z-index: 9999 !important;
+            background: white !important;
+            padding: 40px !important; /* Visual breathing room */
+            border-radius: 16px !important;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1) !important;
+            border: 1px solid #E5E7EB !important;
+        }}
+        
+        /* Hide the submit button's default container padding if any */
+        /* Hide the submit button's default container padding if any */
+        [data-testid="stForm"] > div {{
+             padding-bottom: 0 !important;
+        }}
+
+        /* BUTTON SPACING */
+        [data-testid="stFormSubmitButton"] {{
+             margin-top: 20px !important;
+        }}
+        [data-testid="stFormSubmitButton"] button {{
+             border-radius: 8px !important;
+             border: none !important;
+        }}
+
+        /* HIDE "Press Enter to submit" HINT - AGGRESSIVE */
+        [data-testid="stForm"] small, 
+        [data-testid="stForm"] .streamlit-small-text, 
+        [data-testid="inputInstructions"],
+        div[data-testid="stForm"] div[data-testid="stMarkdownContainer"] p small {{
+             display: none !important;
+             opacity: 0 !important;
+             visibility: hidden !important;
+             height: 0 !important;
+        }}
+
+        /* ERROR MESSAGE POSITIONING */
+        .login-error {{
+            position: fixed !important;
+            top: 82% !important; /* Low enough to clear the form */
+            left: 75% !important;
+            transform: translate(-50%, -50%) !important;
+            width: 360px !important; /* Match form width */
+            z-index: 10000 !important;
+            text-align: center !important;
+        }}
+        
+        .login-error [data-testid="stAlert"] {{
+             width: 100% !important;
+        }}
+    </style>
     
-    with col2:
-        st.markdown("<br>" * 2, unsafe_allow_html=True)
+    <!-- LEFT PANEL CONTENT -->
+    <div class="split-left">
+         <img src="data:image/png;base64,{logo_b64}" style="width: 50%; max-width: 300px; filter: brightness(0) invert(1);" />
+    </div>
+    """, unsafe_allow_html=True)
+
+    # FORM CONTENT
+    with st.form("login_form"):
+        st.text_input("Correo electrónico", key="username", placeholder="user@origenbotanico.com") 
+        # Note: changing label to hidden might improve minimalist look but user didn't ask. 
+        # Kept visible as per screenshot but "Correo electrónico"
         
-        # Header without broken container wrapper
-        st.markdown('<h2 style="text-align: center; color: #1E3A2F; margin-bottom: 0;">🌿 Origen Botánico</h2>', unsafe_allow_html=True)
-        st.markdown('<p style="text-align: center; color: #666; font-size: 14px; margin-top: 5px; margin-bottom: 30px;">Ingresa tus credenciales para continuar</p>', unsafe_allow_html=True)
+        # User screenshot shows "Correo electrónico" label. I will verify if I need to change anything there. 
+        # Current code uses label="Correo electrónico". Correct.
         
-        with st.form("login_form"):
-            st.text_input("Correo electrónico", key="username", placeholder="nombre@empresa.com")
-            st.text_input("Contraseña", type="password", key="password", placeholder="••••••••")
-            
-            # Form submit button
-            submitted = st.form_submit_button("Continuar", type="primary", use_container_width=True)
-            
-            if submitted:
-                password_entered()
-                if st.session_state.get("password_correct", False):
-                    st.rerun()
+        st.text_input("Contraseña", type="password", key="password", placeholder="••••••••")
+        submitted = st.form_submit_button("INGRESAR", type="primary", use_container_width=True)
         
-        if "password_correct" in st.session_state and not st.session_state["password_correct"]:
-            st.error("Usuario o contraseña incorrectos")
-            
-        st.markdown('<div class="forgot-password"><a href="#">¿Olvidaste tu contraseña?</a></div>', unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
-        
+        if submitted:
+             password_entered()
+             if st.session_state.get("password_correct", False):
+                st.rerun()
+
+    # ERROR MESSAGE (Floating below form)
+    if "password_correct" in st.session_state and not st.session_state["password_correct"]:
+         st.markdown(
+             """
+             <div class="login-error">
+             """, unsafe_allow_html=True
+         )
+         st.error("Credenciales incorrectas")
+         st.markdown("</div>", unsafe_allow_html=True)
+    
     return False
 
 def logout():
