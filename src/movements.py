@@ -122,9 +122,9 @@ def extract_movements_from_doc(doc, doc_type):
         mov_type = "AJUSTE" # Movimiento manual / Contable
     
     # Extract Third Party info (Customer/Vendor)
-    # Extract Third Party info (Customer/Vendor)
     # Siigo API varies 'customer', 'provider', 'company', or sometimes 'contact'
-    third_party = doc.get("customer") or doc.get("provider") or doc.get("company") or doc.get("contact") or {}
+    # Prioritize specific keys based on document type if known, otherwise try all
+    third_party = doc.get("customer") or doc.get("provider") or doc.get("company") or doc.get("contact") or doc.get("cost_center") or {}
     
     # Sometimes it's a list (rare but possible), take first
     if isinstance(third_party, list) and len(third_party) > 0:
@@ -135,11 +135,17 @@ def extract_movements_from_doc(doc, doc_type):
         third_party = {}
 
     client_name = third_party.get("name") or third_party.get("full_name") or third_party.get("business_name")
-    client_nit = third_party.get("identification", "N/A")
+    
+    # Robust NIT Search: Check multiple common keys used by Siigo API
+    client_nit = (third_party.get("identification") or 
+                  third_party.get("identification_number") or 
+                  third_party.get("nit") or 
+                  third_party.get("id") or 
+                  "N/A")
     
     # Fallback: If name is missing (common in light API responses), show NIT as Name
     if not client_name:
-        client_name = client_nit
+        client_name = client_nit if client_nit != "N/A" else "Sin Tercero"
     
     # Extract Observation
     observation = doc.get("observations", "")
