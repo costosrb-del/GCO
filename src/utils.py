@@ -147,3 +147,68 @@ def to_pdf(df, title="Reporte", filters=None, custom_header=None):
         fill = not fill # Toggle
         
     return pdf.output(dest='S').encode('latin-1', 'replace')
+
+def fetch_google_sheet_inventory(sheet_url):
+    """
+    Fetches inventory data from a public Google Sheet CSV link.
+    Expects:
+    - Column A (0): Product Code (SKU)
+    - Column B (1): Product Name (Description)
+    - Column C (2): Quantity
+    
+    Returns a list of dictionaries with formatting compatible with the main inventory data.
+    """
+    external_data = []
+    try:
+        # Read CSV directly from URL
+        df = pd.read_csv(sheet_url, on_bad_lines='skip')
+        
+        # Ensure we have at least 3 columns
+        if len(df.columns) < 3:
+            print("ERROR: Google Sheet has less than 3 columns (Requires A=SKU, B=Name, C=Qty).")
+            return []
+            
+        # Select first three columns
+        df = df.iloc[:, [0, 1, 2]]
+        df.columns = ['code', 'name', 'quantity'] 
+        
+        for index, row in df.iterrows():
+            try:
+                code = str(row['code']).strip()
+                name = str(row['name']).strip()
+                
+                # Clean quantity
+                # User Issue: "2.000" (2000) is being read as 2.0.
+                # Fix: Remove '.' (Thousand separator in LATAM). Replace ',' with '.' (Decimal).
+                qty_str = str(row['quantity']).strip()
+                if qty_str and qty_str.lower() != 'nan':
+                     # Remove thousands separator (.)
+                    qty_str = qty_str.replace('.', '') 
+                    # Replace decimal separator (,) with dot for Python
+                    qty_str = qty_str.replace(',', '.') 
+                    qty = float(qty_str)
+                else:
+                    qty = 0.0
+                
+                if not code or code.lower() == 'nan':
+                    continue
+                    
+                if not name or name.lower() == 'nan':
+                    name = "Sin Nombre Externo"
+
+                external_data.append({
+                    "company_name": "Inventario Externo",
+                    "code": code,
+                    "name": name, 
+                    "warehouse_name": "Bodega Libre",
+                    "quantity": qty
+                })
+            except ValueError:
+                continue 
+                
+        print(f"Fetched {len(external_data)} rows from Google Sheet.")
+        return external_data
+        
+    except Exception as e:
+        print(f"Error fetching Google Sheet: {e}")
+        return []

@@ -52,42 +52,56 @@ def get_documents(token, endpoint, start_date, end_date, page=1, page_size=50, d
 
 def get_all_documents(token, endpoint, start_date, end_date, progress_callback=None):
     """
-    Fetch all pages of documents
+    Fetch all pages of documents - OPTIMIZED PARALLEL VERSION
     """
+    import math
+    import concurrent.futures
+
     all_docs = []
-    page = 1
     
-    # Determine the correct date parameter for this endpoint
-    # Journals typically use 'created_start'
-    # Invoices/Notes/Purchases use 'date_start' (Elaboration)
+    # Determine date param
     date_param = "created_start" if endpoint == "journals" else "date_start"
     
-    while True:
-        if progress_callback:
-            progress_callback(f"Consultando {endpoint} - Página {page}...")
-            
-        data = get_documents(token, endpoint, start_date, end_date, page=page, date_param_name=date_param)
+    # 1. Fetch First Page to metadata
+    PAGE_SIZE = 100 # Maximize page size to reduce requests
+    first_page_data = get_documents(token, endpoint, start_date, end_date, page=1, page_size=PAGE_SIZE, date_param_name=date_param)
+    
+    if not first_page_data or "results" not in first_page_data:
+        return []
+
+    results = first_page_data["results"]
+    all_docs.extend(results)
+    
+    pagination = first_page_data.get("pagination", {})
+    total_results = pagination.get("total_results", 0)
+    
+    if total_results == 0:
+        return []
         
-        if not data or "results" not in data:
-            print(f"DEBUG: No data or 'results' key missing for {endpoint} page {page}")
-            break
+    total_pages = math.ceil(total_results / PAGE_SIZE)
+    print(f"DEBUG: {endpoint} has {total_results} results across {total_pages} pages.")
+
+    if total_pages > 1:
+        # Define worker for subsequent pages
+        def fetch_page(p_num):
+            if progress_callback and p_num % 5 == 0: # Throttle UI updates
+                progress_callback(f"{endpoint}: Pag {p_num}/{total_pages}...")
             
-        results = data["results"]
-        if not results:
-            print(f"DEBUG: Empty results for {endpoint} page {page}")
-            break
+            p_data = get_documents(token, endpoint, start_date, end_date, page=p_num, page_size=PAGE_SIZE, date_param_name=date_param)
+            return p_data.get("results", []) if p_data else []
+
+        # 2. Fetch pages 2 to N in parallel
+        # We limit max_workers to avoid hitting rate limits too hard (Siigo likely has limits)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            future_to_page = {executor.submit(fetch_page, p): p for p in range(2, total_pages + 1)}
             
-        all_docs.extend(results)
-        print(f"DEBUG: Found {len(results)} docs in page {page}. Total so far: {len(all_docs)}")
-        
-        pagination = data.get("pagination", {})
-        total_results = pagination.get("total_results", 0)
-        
-        if len(all_docs) >= total_results:
-            break
-            
-        page += 1
-        
+            for future in concurrent.futures.as_completed(future_to_page):
+                try:
+                    page_results = future.result()
+                    all_docs.extend(page_results)
+                except Exception as e:
+                    print(f"Error fetching page parallel: {e}")
+
     return all_docs
 
 def extract_movements_from_doc(doc, doc_type):

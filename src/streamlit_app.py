@@ -514,7 +514,9 @@ if check_password():
         from config import get_config
         from auth import get_auth_token
         from inventory import get_all_products
+        from utils import fetch_google_sheet_inventory
         import concurrent.futures
+        import os
         
         # Initialize session state for data if not present
         if "inventory_data" not in st.session_state:
@@ -531,6 +533,8 @@ if check_password():
             status_text = st.empty()
             
             total_companies = len(companies)
+            # Fetch External Data is an extra step
+            total_steps = total_companies + 1 
             
             if total_companies == 0:
                 st.error("No se encontraron empresas configuradas. Verifique los Secretos en Streamlit Cloud.")
@@ -556,7 +560,35 @@ if check_password():
                         errors.append(f"Error crítico en {company['name']}: {str(e)}")
                     
                     completed += 1
-                    progress_bar.progress(completed / total_companies, text=f"Procesando... ({completed}/{total_companies})")
+                    progress_bar.progress(completed / total_steps, text=f"Procesando... ({completed}/{total_steps})")
+            
+            # --- GOOGLE SHEET INTEGRATION ---
+            sheet_url = os.environ.get("GOOGLE_SHEET_URL")
+            if sheet_url:
+                with st.spinner("Descargando inventario externo desde Google Sheets..."):
+                    try:
+                        ext_data = fetch_google_sheet_inventory(sheet_url)
+                        if ext_data:
+                            # NAME ENRICHMENT: Try to find real names for external codes using Siigo data
+                            # Create a map of code -> name from the data we just fetched
+                            code_name_map = {}
+                            for item in all_data:
+                                if item.get("name") and item.get("name") != "Sin Nombre":
+                                    code_name_map[item["code"]] = item["name"]
+                                    
+                            # Update external data names ONLY if missing
+                            for ext_item in ext_data:
+                                # Logic: If the sheet provided a name, keep it. If not, try Siigo map.
+                                current_name = ext_item.get("name", "")
+                                if (not current_name or current_name == "Sin Nombre Externo") and ext_item["code"] in code_name_map:
+                                    ext_item["name"] = code_name_map[ext_item["code"]]
+                                    
+                            all_data.extend(ext_data)
+                            st.toast(f"Se agregaron {len(ext_data)} registros de Google Sheets", icon="📊")
+                    except Exception as e:
+                        errors.append(f"Fallo Google Sheets: {str(e)}")
+            
+            progress_bar.progress(1.0, text="Finalizado")
             
             progress_container.empty()
             status_text.empty()
@@ -660,7 +692,7 @@ if check_password():
         if not filtered_df.empty:
             # 1. Sales Filter
             if filter_sales:
-                target_codes = ['7007', '7008', '7009', '7957', '7901', '7101', '7210', '3005', '3001', '7416', 'EVO-7701', 'EVO-7702', 'EVO-7703', '3012']
+                target_codes = ['7007', '7008', '7009', '7957', '7901', '7101', '7210', '3005', '3001', '7416', 'EVO-7701', 'EVO-7702', 'EVO-7703', '3012', '7299']
                 import re
                 escaped_codes = [re.escape(c) for c in target_codes]
                 pattern = '|'.join(escaped_codes)
